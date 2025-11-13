@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>隨機抽卡遊戲</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .game-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            max-width: 800px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+        }
+
+        .card {
+            aspect-ratio: 3/4;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            transform-style: preserve-3d;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            background: linear-gradient(45deg, #2c3e50, #34495e);
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 3px solid #34495e;
+        }
+
+        .card-back::before {
+            content: "?";
+            font-size: 3em;
+            color: #ecf0f1;
+            font-weight: bold;
+        }
+
+        .card-front {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.5em;
+            font-weight: bold;
+            color: white;
+            transform: rotateY(180deg);
+            border: 3px solid #2980b9;
+        }
+
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card.revealed {
+            transform: rotateY(180deg);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 15px 30px;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .draw-btn {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            color: white;
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
+        }
+
+        .draw-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.6);
+        }
+
+        .draw-btn:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .reset-btn {
+            background: linear-gradient(45deg, #27ae60, #229954);
+            color: white;
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.4);
+        }
+
+        .reset-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(39, 174, 96, 0.6);
+        }
+
+        .timer {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            font-size: 2em;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            display: none;
+        }
+
+        .timer.warning {
+            background: rgba(231, 76, 60, 0.9);
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .message {
+            text-align: center;
+            font-size: 1.2em;
+            color: #2c3e50;
+            margin-top: 20px;
+            min-height: 30px;
+        }
+
+        @media (max-width: 600px) {
+            .cards-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 10px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            .card-front {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>🎴 隨機抽卡遊戲 🎴</h1>
+        
+        <div class="cards-grid" id="cardsGrid">
+            <!-- 卡片將由JavaScript生成 -->
+        </div>
+        
+        <div class="controls">
+            <button class="draw-btn" id="drawBtn" onclick="drawCards()">抽取卡牌</button>
+            <button class="reset-btn" onclick="resetGame()">重新開始</button>
+        </div>
+        
+        <div class="message" id="message"></div>
+    </div>
+    
+    <div class="timer" id="timer">02:30</div>
+
+    <script>
+        let cards = [];
+        let drawnCards = [];
+        let timerInterval;
+        let timeLeft = 150; // 2分30秒 = 150秒
+
+        // 初始化遊戲
+        function initGame() {
+            const cardsGrid = document.getElementById('cardsGrid');
+            cardsGrid.innerHTML = '';
+            cards = [];
+            drawnCards = [];
+            
+            // 創建20張卡片
+            for (let i = 1; i <= 20; i++) {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="card-back"></div>
+                    <div class="card-front">${i}</div>
+                `;
+                card.dataset.number = i;
+                cardsGrid.appendChild(card);
+                cards.push(card);
+            }
+            
+            updateMessage('點擊"抽取卡牌"開始遊戲！');
+        }
+
+        // 抽取卡牌
+        function drawCards() {
+            if (drawnCards.length >= 4) {
+                updateMessage('已經抽取了4張卡牌！');
+                return;
+            }
+            
+            // 隨機選擇4張未翻開的卡片
+            const availableCards = cards.filter(card => !drawnCards.includes(card));
+            const shuffled = availableCards.sort(() => 0.5 - Math.random());
+            const selectedCards = shuffled.slice(0, 4);
+            
+            // 翻開選中的卡片
+            selectedCards.forEach((card, index) => {
+                setTimeout(() => {
+                    card.classList.add('revealed');
+                    drawnCards.push(card);
+                }, index * 200);
+            });
+            
+            // 禁用抽取按鈕
+            document.getElementById('drawBtn').disabled = true;
+            
+            // 開始倒計時
+            startTimer();
+            
+            updateMessage(`抽到了數字: ${selectedCards.map(card => card.dataset.number).join(', ')}`);
+        }
+
+        // 開始倒計時
+        function startTimer() {
+            const timerElement = document.getElementById('timer');
+            timerElement.style.display = 'block';
+            timeLeft = 150;
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                const displayTime = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                timerElement.textContent = displayTime;
+                
+                // 最後30秒警告
+                if (timeLeft <= 30) {
+                    timerElement.classList.add('warning');
+                }
+                
+                // 時間到
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    timerElement.textContent = '時間到！';
+                    updateMessage('時間到！遊戲結束，請重新開始。');
+                    document.getElementById('drawBtn').disabled = true;
+                }
+            }, 1000);
+        }
+
+        // 重置遊戲
+        function resetGame() {
+            // 清除計時器
+            clearInterval(timerInterval);
+            
+            // 重置所有卡片
+            cards.forEach(card => {
+                card.classList.remove('revealed', 'flipped');
+            });
+            
+            // 重置變量
+            drawnCards = [];
+            timeLeft = 150;
+            
+            // 重置UI
+            document.getElementById('drawBtn').disabled = false;
+            document.getElementById('timer').style.display = 'none';
+            document.getElementById('timer').classList.remove('warning');
+            document.getElementById('timer').textContent = '02:30';
+            
+            updateMessage('遊戲已重置，可以重新開始！');
+        }
+
+        // 更新訊息
+        function updateMessage(text) {
+            document.getElementById('message').textContent = text;
+        }
+
+        // 頁面加載時初始化遊戲
+        window.onload = initGame;
+    </script>
+</body>
+</html>
